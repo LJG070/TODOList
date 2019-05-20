@@ -23,7 +23,8 @@ pom.xml에 dependency로 정의 되어있음
 2. mvn package
 3. local에서 테스트 하기 위한 구동 java -jar target/dependency/webapp-runner.jar target/todolist.war 
 4. port 8080으로 테스트 가능
-5. heroku 배포
+5. heroku 배포를 위한 과정 => procfile 파일 설정(확장자 없음) 
+=> web: java $JAVA_OPTS -jar target/dependency/webapp-runner.jar --port $PORT target/*.war
 6. git init => git add . => git commit => heroku create
 7. git push heroku master
 8. heroku addons:create jawsdb-maria
