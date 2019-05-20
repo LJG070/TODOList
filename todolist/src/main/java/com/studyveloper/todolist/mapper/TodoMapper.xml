@@ -1,0 +1,153 @@
+<?xml version="1.0" encoding="UTF-8"  ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" " http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.studyveloper.todolist.mapper.TodoMapper">
+	<resultMap id="result" type="Todo">
+		<result property="todoNumber" column="todo_number"/>
+		<result property="title" column="todo_title"/>
+		<result property="contents" column="todo_contents"/>
+		<result property="importancy" column="todo_importancy"/>
+		<result property="performDate" column="todo_performDate"/>
+		<result property="completed" column="todo_completed"/>
+		<result property="dueDate" column="todo_dueDate"/>
+	</resultMap>
+	
+	<sql id="selectTodoSql">
+			todo_number, todo_title, todo_contents, todo_importancy,
+			DATE_FORMAT(todo_performDate, '%Y-%m-%d') AS todo_performDate, 
+			todo_completed, 
+			DATE_FORMAT(todo_dueDate, '%Y-%m-%d') AS todo_dueDate
+	</sql>
+	
+	<sql id="performDateSql">
+		<choose>
+			<when test="term != null">
+					DATE(todo_performDate) &gt;= STR_TO_DATE(#{performDate}, '%Y-%m-%d')
+				AND
+					DATE(todo_performDate) &lt; ADDDATE(STR_TO_DATE(#{performDate}, '%Y-%m-%d'), INTERVAL #{term} DAY)
+			</when>
+			<otherwise>
+					DATE(todo_performDate) = STR_TO_DATE(#{performDate}, '%Y-%m-%d')
+			</otherwise>
+		</choose>
+	</sql>
+	
+	<insert id="addTodo" parameterType="Todo">
+		INSERT INTO
+			todo(todo_title, todo_contents, todo_importancy, 
+				 todo_performDate, todo_completed, todo_dueDate)
+		VALUES
+			(#{title}, #{contents}, #{importancy}, 
+			STR_TO_DATE(#{performDate}, '%Y-%m-%d'), 
+			#{completed}, 
+			STR_TO_DATE(#{dueDate}, '%Y-%m-%d'));
+	</insert>
+	
+	<update id="modifyTodo" parameterType="map">
+		UPDATE 
+			todo
+		SET
+			todo_title = #{todo.title}, 
+			todo_contents = #{todo.contents}, 
+			todo_importancy = #{todo.importancy}, 
+			todo_performDate = STR_TO_DATE(#{todo.performDate}, '%Y-%m-%d'), 
+			todo_completed = #{todo.completed}, 
+			todo_dueDate = STR_TO_DATE(#{todo.dueDate}, '%Y-%m-%d')
+		WHERE
+			todo_number = #{todoNumber}
+	</update>
+	
+	<delete id="deleteTodo" parameterType="int">
+		DELETE FROM
+			todo
+		WHERE
+			todo_number = #{todoNumber}
+	</delete>
+	
+	<delete id="deleteTodoList" parameterType="java.util.List">
+		DELETE FROM
+			todo
+		WHERE
+			todo_number
+		IN
+			<foreach collection = "list" item = "todoNumber" separator = "," index = "index" open="(" close=")">
+				#{todoNumber}
+			</foreach>
+	</delete>
+	
+	<update id="resetKey">
+		ALTER TABLE todo AUTO_INCREMENT = 1;
+	</update>
+	
+	<delete id="deleteAllTodo">
+		DELETE FROM todo;
+	</delete>
+	
+	<select id="searchTodo" parameterType="int" resultMap="result">
+		SELECT  
+			<include refid="selectTodoSql"></include>
+		FROM 
+			todo
+		WHERE 
+			todo_number = #{todoNumber}
+	</select>
+	
+	<select id="searchTodoList" parameterType="java.util.List" resultMap="result">
+		SELECT  
+			<include refid="selectTodoSql"></include>
+		FROM 
+			todo
+		WHERE
+			todo_number
+		IN
+			<foreach collection="list" item="todoNumber" separator="," open="(" close=")">
+				#{todoNumber}
+			</foreach>
+	</select>
+	
+	<select id="searchTodoByPerformDate" parameterType="java.util.Map" resultMap="result">
+		SELECT
+			<include refid="selectTodoSql"></include>
+		FROM
+			todo
+		WHERE
+			<include refid="performDateSql"></include>
+		ORDER BY
+			todo_importancy DESC
+	</select>
+	
+	<select id="searchTodoByImportancy" parameterType="java.util.Map" resultMap="result">
+		SELECT
+			<include refid="selectTodoSql"></include>
+		FROM
+			todo
+		WHERE
+			<include refid="performDateSql"></include>
+		AND
+			todo_importancy &gt;= #{importancy}
+	</select>
+	
+	<select id="searchCompletedTodo" parameterType="java.util.Map" resultMap="result">
+		SELECT
+			<include refid="selectTodoSql"></include>
+		FROM
+			todo
+		WHERE
+			<include refid="performDateSql"></include>
+		AND
+			todo_completed = #{completed}
+		ORDER BY
+			todo_importancy DESC
+	</select>
+	
+	<select id="searchTodoByDueDate" parameterType="String" resultMap="result">
+		SELECT
+			<include refid="selectTodoSql"></include>
+		FROM
+			todo
+		WHERE
+			DATE(todo_dueDate) &lt; STR_TO_DATE(#{dueDate}, '%Y-%m-%d')
+		AND
+			todo_completed = 0
+	</select>
+</mapper>
